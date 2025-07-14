@@ -1,0 +1,18 @@
+export const alevelLabels: Record<string, string> = {
+  alevel61: "คณิตศาสตร์ประยุกต์ 1",
+  alevel62: "คณิตศาสตร์ประยุกต์ 2",
+  alevel63: "วิทยาศาสตร์ประยุกต์",
+  alevel64: "ฟิสิกส์",
+  alevel65: "เคมี",
+  alevel66: "ชีววิทยา",
+  alevel70: "สังคมศึกษา",
+  alevel81: "ภาษาไทย",
+  alevel82: "ภาษาอังกฤษ",
+  alevel83: "ภาษาฝรั่งเศส",
+  alevel84: "ภาษาเยอรมัน",
+  alevel85: "ภาษาญี่ปุ่น",
+  alevel86: "ภาษาเกาหลี",
+  alevel87: "ภาษาจีน",
+  alevel88: "ภาษาบาลี",
+  alevel89: "ภาษาสเปน",
+};

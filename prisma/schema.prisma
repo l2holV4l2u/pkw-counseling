@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider                  = "zod-prisma-types"
+  createRelationValuesTypes = "true"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String?           @unique
+  password        String
+  updatedAt       DateTime         @default(now()) @updatedAt
+  role            String
+  title           String?
+  firstName       String?
+  lastName        String?
+  schoolYear      String?
+  room            String?
+  studentId       String?          @unique
+  profileUrl      String?  
+
+  tgatScore       TGATScore?
+  tpatScore       TPATScore?
+  alevelScore     ALevelScore?
+  uniChoices      UniChoice[]
+}
+
+model TGATScore {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  tgat1  Int?
+  tgat2  Int?
+  tgat3  Int?
+}
+
+model TPATScore {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  tpat1  Int?
+  tpat2  Int?
+  tpat3  Int?
+  tpat4  Int?
+  tpat5  Int?
+}
+
+model ALevelScore {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  alevel61 Int? // คณิตศาสตร์ประยุกต์ 1 (พื้นฐาน + เพิ่มเติม)
+  alevel62 Int? // คณิตศาสตร์ประยุกต์ 2
+  alevel63 Int? // วิทยาศาสตร์ประยุกต์
+  alevel64 Int? // ฟิสิกส์
+  alevel65 Int? // เคมี
+  alevel66 Int? // ชีววิทยา
+
+  alevel70 Int? // สังคมศึกษา
+
+  alevel81 Int? // ภาษาไทย
+  alevel82 Int? // ภาษาอังกฤษ
+  alevel83 Int? // ภาษาฝรั่งเศส
+  alevel84 Int? // ภาษาเยอรมัน
+  alevel85 Int? // ภาษาญี่ปุ่น
+  alevel86 Int? // ภาษาเกาหลี
+  alevel87 Int? // ภาษาจีน
+  alevel88 Int? // ภาษาบาลี
+  alevel89 Int? // ภาษาสเปน
+}
+
+model UniChoice{
+  id        String  @id @default(uuid())
+  userId    String
+  programId String
+  order     Int
+  user      User   @relation(fields: [userId], references: [id])
+}
