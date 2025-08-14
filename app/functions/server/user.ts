@@ -56,3 +56,7 @@ export async function getUserWithScoreById(id: string) {
   const student: UserWithScore = { user, tgat, tpat, alevel };
   return { student };
 }
+
+export async function updateUser(user: User) {
+  await prisma.user.update({ where: { id: user.id }, data: user });
+}

@@ -3,13 +3,12 @@ import {
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
   useRouteError,
 } from "@remix-run/react";
-import { Analytics } from "@vercel/analytics/remix";
-import type { LinksFunction } from "@remix-run/node";
-import { SpeedInsights } from "@vercel/speed-insights/remix";
+import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import "./tailwind.css";
 
 export const links: LinksFunction = () => [
@@ -30,6 +29,19 @@ export const links: LinksFunction = () => [
   },
 ];
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  // Allow routes starting with /dashboard or /auth
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/auth")) {
+    return null; // continue rendering
+  }
+
+  // Redirect all others to /dashboard
+  return redirect("/dashboard");
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -44,8 +56,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

@@ -12,7 +12,9 @@ import type { Prisma } from '@prisma/client';
 
 export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted','ReadCommitted','RepeatableRead','Serializable']);
 
-export const UserScalarFieldEnumSchema = z.enum(['id','email','password','updatedAt','role','title','firstName','lastName','studentId','profileUrl']);
+export const UserScalarFieldEnumSchema = z.enum(['id','email','password','updatedAt','role','title','firstName','lastName','studentId','profileUrl','schoolYear','seatNumber','roomId','homeroomId']);
+
+export const RoomScalarFieldEnumSchema = z.enum(['id','label','grade','roomNo']);
 
 export const TGATScoreScalarFieldEnumSchema = z.enum(['id','userId','tgat1','tgat2','tgat3']);
 
@@ -21,6 +23,8 @@ export const TPATScoreScalarFieldEnumSchema = z.enum(['id','userId','tpat1','tpa
 export const ALevelScoreScalarFieldEnumSchema = z.enum(['id','userId','alevel61','alevel62','alevel63','alevel64','alevel65','alevel66','alevel70','alevel81','alevel82','alevel83','alevel84','alevel85','alevel86','alevel87','alevel88','alevel89']);
 
 export const UniChoiceScalarFieldEnumSchema = z.enum(['id','userId','programId','order']);
+
+export const EmailVerificationScalarFieldEnumSchema = z.enum(['id','email','otp','expiresAt','createdAt']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -46,6 +50,10 @@ export const UserSchema = z.object({
   lastName: z.string().nullable(),
   studentId: z.string().nullable(),
   profileUrl: z.string().nullable(),
+  schoolYear: z.string().nullable(),
+  seatNumber: z.number().int().nullable(),
+  roomId: z.string().nullable(),
+  homeroomId: z.string().nullable(),
 })
 
 export type User = z.infer<typeof UserSchema>
@@ -54,6 +62,8 @@ export type User = z.infer<typeof UserSchema>
 //------------------------------------------------------
 
 export type UserRelations = {
+  room?: RoomWithRelations | null;
+  homeroom?: RoomWithRelations | null;
   tgatScore?: TGATScoreWithRelations | null;
   tpatScore?: TPATScoreWithRelations | null;
   alevelScore?: ALevelScoreWithRelations | null;
@@ -63,10 +73,40 @@ export type UserRelations = {
 export type UserWithRelations = z.infer<typeof UserSchema> & UserRelations
 
 export const UserWithRelationsSchema: z.ZodType<UserWithRelations> = UserSchema.merge(z.object({
+  room: z.lazy(() => RoomWithRelationsSchema).nullable(),
+  homeroom: z.lazy(() => RoomWithRelationsSchema).nullable(),
   tgatScore: z.lazy(() => TGATScoreWithRelationsSchema).nullable(),
   tpatScore: z.lazy(() => TPATScoreWithRelationsSchema).nullable(),
   alevelScore: z.lazy(() => ALevelScoreWithRelationsSchema).nullable(),
   uniChoices: z.lazy(() => UniChoiceWithRelationsSchema).array(),
+}))
+
+/////////////////////////////////////////
+// ROOM SCHEMA
+/////////////////////////////////////////
+
+export const RoomSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+})
+
+export type Room = z.infer<typeof RoomSchema>
+
+// ROOM RELATION SCHEMA
+//------------------------------------------------------
+
+export type RoomRelations = {
+  users: UserWithRelations[];
+  homeroomTeacher?: UserWithRelations | null;
+};
+
+export type RoomWithRelations = z.infer<typeof RoomSchema> & RoomRelations
+
+export const RoomWithRelationsSchema: z.ZodType<RoomWithRelations> = RoomSchema.merge(z.object({
+  users: z.lazy(() => UserWithRelationsSchema).array(),
+  homeroomTeacher: z.lazy(() => UserWithRelationsSchema).nullable(),
 }))
 
 /////////////////////////////////////////
@@ -192,6 +232,20 @@ export const UniChoiceWithRelationsSchema: z.ZodType<UniChoiceWithRelations> = U
 }))
 
 /////////////////////////////////////////
+// EMAIL VERIFICATION SCHEMA
+/////////////////////////////////////////
+
+export const EmailVerificationSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string(),
+  otp: z.string(),
+  expiresAt: z.coerce.date(),
+  createdAt: z.coerce.date(),
+})
+
+export type EmailVerification = z.infer<typeof EmailVerificationSchema>
+
+/////////////////////////////////////////
 // SELECT & INCLUDE
 /////////////////////////////////////////
 
@@ -199,6 +253,8 @@ export const UniChoiceWithRelationsSchema: z.ZodType<UniChoiceWithRelations> = U
 //------------------------------------------------------
 
 export const UserIncludeSchema: z.ZodType<Prisma.UserInclude> = z.object({
+  room: z.union([z.boolean(),z.lazy(() => RoomArgsSchema)]).optional(),
+  homeroom: z.union([z.boolean(),z.lazy(() => RoomArgsSchema)]).optional(),
   tgatScore: z.union([z.boolean(),z.lazy(() => TGATScoreArgsSchema)]).optional(),
   tpatScore: z.union([z.boolean(),z.lazy(() => TPATScoreArgsSchema)]).optional(),
   alevelScore: z.union([z.boolean(),z.lazy(() => ALevelScoreArgsSchema)]).optional(),
@@ -230,11 +286,49 @@ export const UserSelectSchema: z.ZodType<Prisma.UserSelect> = z.object({
   lastName: z.boolean().optional(),
   studentId: z.boolean().optional(),
   profileUrl: z.boolean().optional(),
+  schoolYear: z.boolean().optional(),
+  seatNumber: z.boolean().optional(),
+  roomId: z.boolean().optional(),
+  homeroomId: z.boolean().optional(),
+  room: z.union([z.boolean(),z.lazy(() => RoomArgsSchema)]).optional(),
+  homeroom: z.union([z.boolean(),z.lazy(() => RoomArgsSchema)]).optional(),
   tgatScore: z.union([z.boolean(),z.lazy(() => TGATScoreArgsSchema)]).optional(),
   tpatScore: z.union([z.boolean(),z.lazy(() => TPATScoreArgsSchema)]).optional(),
   alevelScore: z.union([z.boolean(),z.lazy(() => ALevelScoreArgsSchema)]).optional(),
   uniChoices: z.union([z.boolean(),z.lazy(() => UniChoiceFindManyArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => UserCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+// ROOM
+//------------------------------------------------------
+
+export const RoomIncludeSchema: z.ZodType<Prisma.RoomInclude> = z.object({
+  users: z.union([z.boolean(),z.lazy(() => UserFindManyArgsSchema)]).optional(),
+  homeroomTeacher: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => RoomCountOutputTypeArgsSchema)]).optional(),
+}).strict()
+
+export const RoomArgsSchema: z.ZodType<Prisma.RoomDefaultArgs> = z.object({
+  select: z.lazy(() => RoomSelectSchema).optional(),
+  include: z.lazy(() => RoomIncludeSchema).optional(),
+}).strict();
+
+export const RoomCountOutputTypeArgsSchema: z.ZodType<Prisma.RoomCountOutputTypeDefaultArgs> = z.object({
+  select: z.lazy(() => RoomCountOutputTypeSelectSchema).nullish(),
+}).strict();
+
+export const RoomCountOutputTypeSelectSchema: z.ZodType<Prisma.RoomCountOutputTypeSelect> = z.object({
+  users: z.boolean().optional(),
+}).strict();
+
+export const RoomSelectSchema: z.ZodType<Prisma.RoomSelect> = z.object({
+  id: z.boolean().optional(),
+  label: z.boolean().optional(),
+  grade: z.boolean().optional(),
+  roomNo: z.boolean().optional(),
+  users: z.union([z.boolean(),z.lazy(() => UserFindManyArgsSchema)]).optional(),
+  homeroomTeacher: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
+  _count: z.union([z.boolean(),z.lazy(() => RoomCountOutputTypeArgsSchema)]).optional(),
 }).strict()
 
 // TGAT SCORE
@@ -335,6 +429,17 @@ export const UniChoiceSelectSchema: z.ZodType<Prisma.UniChoiceSelect> = z.object
   user: z.union([z.boolean(),z.lazy(() => UserArgsSchema)]).optional(),
 }).strict()
 
+// EMAIL VERIFICATION
+//------------------------------------------------------
+
+export const EmailVerificationSelectSchema: z.ZodType<Prisma.EmailVerificationSelect> = z.object({
+  id: z.boolean().optional(),
+  email: z.boolean().optional(),
+  otp: z.boolean().optional(),
+  expiresAt: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+}).strict()
+
 
 /////////////////////////////////////////
 // INPUT TYPES
@@ -354,6 +459,12 @@ export const UserWhereInputSchema: z.ZodType<Prisma.UserWhereInput> = z.object({
   lastName: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   studentId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   profileUrl: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  schoolYear: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  seatNumber: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+  roomId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  homeroomId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  room: z.union([ z.lazy(() => RoomNullableScalarRelationFilterSchema),z.lazy(() => RoomWhereInputSchema) ]).optional().nullable(),
+  homeroom: z.union([ z.lazy(() => RoomNullableScalarRelationFilterSchema),z.lazy(() => RoomWhereInputSchema) ]).optional().nullable(),
   tgatScore: z.union([ z.lazy(() => TGATScoreNullableScalarRelationFilterSchema),z.lazy(() => TGATScoreWhereInputSchema) ]).optional().nullable(),
   tpatScore: z.union([ z.lazy(() => TPATScoreNullableScalarRelationFilterSchema),z.lazy(() => TPATScoreWhereInputSchema) ]).optional().nullable(),
   alevelScore: z.union([ z.lazy(() => ALevelScoreNullableScalarRelationFilterSchema),z.lazy(() => ALevelScoreWhereInputSchema) ]).optional().nullable(),
@@ -371,6 +482,12 @@ export const UserOrderByWithRelationInputSchema: z.ZodType<Prisma.UserOrderByWit
   lastName: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   studentId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   profileUrl: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  schoolYear: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  seatNumber: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  roomId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  homeroomId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  room: z.lazy(() => RoomOrderByWithRelationInputSchema).optional(),
+  homeroom: z.lazy(() => RoomOrderByWithRelationInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreOrderByWithRelationInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreOrderByWithRelationInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreOrderByWithRelationInputSchema).optional(),
@@ -381,7 +498,18 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   z.object({
     id: z.string().uuid(),
     email: z.string(),
-    studentId: z.string()
+    studentId: z.string(),
+    homeroomId: z.string()
+  }),
+  z.object({
+    id: z.string().uuid(),
+    email: z.string(),
+    studentId: z.string(),
+  }),
+  z.object({
+    id: z.string().uuid(),
+    email: z.string(),
+    homeroomId: z.string(),
   }),
   z.object({
     id: z.string().uuid(),
@@ -390,6 +518,15 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   z.object({
     id: z.string().uuid(),
     studentId: z.string(),
+    homeroomId: z.string(),
+  }),
+  z.object({
+    id: z.string().uuid(),
+    studentId: z.string(),
+  }),
+  z.object({
+    id: z.string().uuid(),
+    homeroomId: z.string(),
   }),
   z.object({
     id: z.string().uuid(),
@@ -397,18 +534,35 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   z.object({
     email: z.string(),
     studentId: z.string(),
+    homeroomId: z.string(),
+  }),
+  z.object({
+    email: z.string(),
+    studentId: z.string(),
+  }),
+  z.object({
+    email: z.string(),
+    homeroomId: z.string(),
   }),
   z.object({
     email: z.string(),
   }),
   z.object({
     studentId: z.string(),
+    homeroomId: z.string(),
+  }),
+  z.object({
+    studentId: z.string(),
+  }),
+  z.object({
+    homeroomId: z.string(),
   }),
 ])
 .and(z.object({
   id: z.string().uuid().optional(),
   email: z.string().optional(),
   studentId: z.string().optional(),
+  homeroomId: z.string().optional(),
   AND: z.union([ z.lazy(() => UserWhereInputSchema),z.lazy(() => UserWhereInputSchema).array() ]).optional(),
   OR: z.lazy(() => UserWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => UserWhereInputSchema),z.lazy(() => UserWhereInputSchema).array() ]).optional(),
@@ -419,6 +573,11 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   firstName: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   lastName: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
   profileUrl: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  schoolYear: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  seatNumber: z.union([ z.lazy(() => IntNullableFilterSchema),z.number().int() ]).optional().nullable(),
+  roomId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  room: z.union([ z.lazy(() => RoomNullableScalarRelationFilterSchema),z.lazy(() => RoomWhereInputSchema) ]).optional().nullable(),
+  homeroom: z.union([ z.lazy(() => RoomNullableScalarRelationFilterSchema),z.lazy(() => RoomWhereInputSchema) ]).optional().nullable(),
   tgatScore: z.union([ z.lazy(() => TGATScoreNullableScalarRelationFilterSchema),z.lazy(() => TGATScoreWhereInputSchema) ]).optional().nullable(),
   tpatScore: z.union([ z.lazy(() => TPATScoreNullableScalarRelationFilterSchema),z.lazy(() => TPATScoreWhereInputSchema) ]).optional().nullable(),
   alevelScore: z.union([ z.lazy(() => ALevelScoreNullableScalarRelationFilterSchema),z.lazy(() => ALevelScoreWhereInputSchema) ]).optional().nullable(),
@@ -436,9 +595,15 @@ export const UserOrderByWithAggregationInputSchema: z.ZodType<Prisma.UserOrderBy
   lastName: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   studentId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   profileUrl: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  schoolYear: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  seatNumber: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  roomId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
+  homeroomId: z.union([ z.lazy(() => SortOrderSchema),z.lazy(() => SortOrderInputSchema) ]).optional(),
   _count: z.lazy(() => UserCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => UserAvgOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => UserMaxOrderByAggregateInputSchema).optional(),
-  _min: z.lazy(() => UserMinOrderByAggregateInputSchema).optional()
+  _min: z.lazy(() => UserMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => UserSumOrderByAggregateInputSchema).optional()
 }).strict();
 
 export const UserScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.UserScalarWhereWithAggregatesInput> = z.object({
@@ -455,6 +620,78 @@ export const UserScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.UserScal
   lastName: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
   studentId: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
   profileUrl: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  schoolYear: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  seatNumber: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema),z.number() ]).optional().nullable(),
+  roomId: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+  homeroomId: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema),z.string() ]).optional().nullable(),
+}).strict();
+
+export const RoomWhereInputSchema: z.ZodType<Prisma.RoomWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => RoomWhereInputSchema),z.lazy(() => RoomWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RoomWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RoomWhereInputSchema),z.lazy(() => RoomWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  label: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  grade: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  roomNo: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
+  users: z.lazy(() => UserListRelationFilterSchema).optional(),
+  homeroomTeacher: z.union([ z.lazy(() => UserNullableScalarRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RoomOrderByWithRelationInputSchema: z.ZodType<Prisma.RoomOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  label: z.lazy(() => SortOrderSchema).optional(),
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional(),
+  users: z.lazy(() => UserOrderByRelationAggregateInputSchema).optional(),
+  homeroomTeacher: z.lazy(() => UserOrderByWithRelationInputSchema).optional()
+}).strict();
+
+export const RoomWhereUniqueInputSchema: z.ZodType<Prisma.RoomWhereUniqueInput> = z.union([
+  z.object({
+    id: z.string().uuid(),
+    grade_roomNo: z.lazy(() => RoomGradeRoomNoCompoundUniqueInputSchema)
+  }),
+  z.object({
+    id: z.string().uuid(),
+  }),
+  z.object({
+    grade_roomNo: z.lazy(() => RoomGradeRoomNoCompoundUniqueInputSchema),
+  }),
+])
+.and(z.object({
+  id: z.string().uuid().optional(),
+  grade_roomNo: z.lazy(() => RoomGradeRoomNoCompoundUniqueInputSchema).optional(),
+  AND: z.union([ z.lazy(() => RoomWhereInputSchema),z.lazy(() => RoomWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RoomWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RoomWhereInputSchema),z.lazy(() => RoomWhereInputSchema).array() ]).optional(),
+  label: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  grade: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  roomNo: z.union([ z.lazy(() => IntFilterSchema),z.number().int() ]).optional(),
+  users: z.lazy(() => UserListRelationFilterSchema).optional(),
+  homeroomTeacher: z.union([ z.lazy(() => UserNullableScalarRelationFilterSchema),z.lazy(() => UserWhereInputSchema) ]).optional().nullable(),
+}).strict());
+
+export const RoomOrderByWithAggregationInputSchema: z.ZodType<Prisma.RoomOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  label: z.lazy(() => SortOrderSchema).optional(),
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => RoomCountOrderByAggregateInputSchema).optional(),
+  _avg: z.lazy(() => RoomAvgOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => RoomMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => RoomMinOrderByAggregateInputSchema).optional(),
+  _sum: z.lazy(() => RoomSumOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const RoomScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.RoomScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => RoomScalarWhereWithAggregatesInputSchema),z.lazy(() => RoomScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => RoomScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => RoomScalarWhereWithAggregatesInputSchema),z.lazy(() => RoomScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  label: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  grade: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
+  roomNo: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
 export const TGATScoreWhereInputSchema: z.ZodType<Prisma.TGATScoreWhereInput> = z.object({
@@ -794,6 +1031,70 @@ export const UniChoiceScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Uni
   order: z.union([ z.lazy(() => IntWithAggregatesFilterSchema),z.number() ]).optional(),
 }).strict();
 
+export const EmailVerificationWhereInputSchema: z.ZodType<Prisma.EmailVerificationWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => EmailVerificationWhereInputSchema),z.lazy(() => EmailVerificationWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => EmailVerificationWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => EmailVerificationWhereInputSchema),z.lazy(() => EmailVerificationWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  email: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  otp: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  expiresAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+}).strict();
+
+export const EmailVerificationOrderByWithRelationInputSchema: z.ZodType<Prisma.EmailVerificationOrderByWithRelationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  email: z.lazy(() => SortOrderSchema).optional(),
+  otp: z.lazy(() => SortOrderSchema).optional(),
+  expiresAt: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const EmailVerificationWhereUniqueInputSchema: z.ZodType<Prisma.EmailVerificationWhereUniqueInput> = z.union([
+  z.object({
+    id: z.string().uuid(),
+    email: z.string()
+  }),
+  z.object({
+    id: z.string().uuid(),
+  }),
+  z.object({
+    email: z.string(),
+  }),
+])
+.and(z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional(),
+  AND: z.union([ z.lazy(() => EmailVerificationWhereInputSchema),z.lazy(() => EmailVerificationWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => EmailVerificationWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => EmailVerificationWhereInputSchema),z.lazy(() => EmailVerificationWhereInputSchema).array() ]).optional(),
+  otp: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  expiresAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+}).strict());
+
+export const EmailVerificationOrderByWithAggregationInputSchema: z.ZodType<Prisma.EmailVerificationOrderByWithAggregationInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  email: z.lazy(() => SortOrderSchema).optional(),
+  otp: z.lazy(() => SortOrderSchema).optional(),
+  expiresAt: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional(),
+  _count: z.lazy(() => EmailVerificationCountOrderByAggregateInputSchema).optional(),
+  _max: z.lazy(() => EmailVerificationMaxOrderByAggregateInputSchema).optional(),
+  _min: z.lazy(() => EmailVerificationMinOrderByAggregateInputSchema).optional()
+}).strict();
+
+export const EmailVerificationScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.EmailVerificationScalarWhereWithAggregatesInput> = z.object({
+  AND: z.union([ z.lazy(() => EmailVerificationScalarWhereWithAggregatesInputSchema),z.lazy(() => EmailVerificationScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  OR: z.lazy(() => EmailVerificationScalarWhereWithAggregatesInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => EmailVerificationScalarWhereWithAggregatesInputSchema),z.lazy(() => EmailVerificationScalarWhereWithAggregatesInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  email: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  otp: z.union([ z.lazy(() => StringWithAggregatesFilterSchema),z.string() ]).optional(),
+  expiresAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+  createdAt: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema),z.coerce.date() ]).optional(),
+}).strict();
+
 export const UserCreateInputSchema: z.ZodType<Prisma.UserCreateInput> = z.object({
   id: z.string().uuid().optional(),
   email: z.string().optional().nullable(),
@@ -805,6 +1106,10 @@ export const UserCreateInputSchema: z.ZodType<Prisma.UserCreateInput> = z.object
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional(),
@@ -822,6 +1127,10 @@ export const UserUncheckedCreateInputSchema: z.ZodType<Prisma.UserUncheckedCreat
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
@@ -839,6 +1148,10 @@ export const UserUpdateInputSchema: z.ZodType<Prisma.UserUpdateInput> = z.object
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional(),
@@ -856,6 +1169,10 @@ export const UserUncheckedUpdateInputSchema: z.ZodType<Prisma.UserUncheckedUpdat
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
@@ -872,7 +1189,11 @@ export const UserCreateManyInputSchema: z.ZodType<Prisma.UserCreateManyInput> = 
   firstName: z.string().optional().nullable(),
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
-  profileUrl: z.string().optional().nullable()
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable()
 }).strict();
 
 export const UserUpdateManyMutationInputSchema: z.ZodType<Prisma.UserUpdateManyMutationInput> = z.object({
@@ -886,6 +1207,8 @@ export const UserUpdateManyMutationInputSchema: z.ZodType<Prisma.UserUpdateManyM
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedUpdateManyInput> = z.object({
@@ -899,6 +1222,67 @@ export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedU
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+}).strict();
+
+export const RoomCreateInputSchema: z.ZodType<Prisma.RoomCreateInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  users: z.lazy(() => UserCreateNestedManyWithoutRoomInputSchema).optional(),
+  homeroomTeacher: z.lazy(() => UserCreateNestedOneWithoutHomeroomInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedCreateInputSchema: z.ZodType<Prisma.RoomUncheckedCreateInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  users: z.lazy(() => UserUncheckedCreateNestedManyWithoutRoomInputSchema).optional(),
+  homeroomTeacher: z.lazy(() => UserUncheckedCreateNestedOneWithoutHomeroomInputSchema).optional()
+}).strict();
+
+export const RoomUpdateInputSchema: z.ZodType<Prisma.RoomUpdateInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  users: z.lazy(() => UserUpdateManyWithoutRoomNestedInputSchema).optional(),
+  homeroomTeacher: z.lazy(() => UserUpdateOneWithoutHomeroomNestedInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedUpdateInputSchema: z.ZodType<Prisma.RoomUncheckedUpdateInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  users: z.lazy(() => UserUncheckedUpdateManyWithoutRoomNestedInputSchema).optional(),
+  homeroomTeacher: z.lazy(() => UserUncheckedUpdateOneWithoutHomeroomNestedInputSchema).optional()
+}).strict();
+
+export const RoomCreateManyInputSchema: z.ZodType<Prisma.RoomCreateManyInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int()
+}).strict();
+
+export const RoomUpdateManyMutationInputSchema: z.ZodType<Prisma.RoomUpdateManyMutationInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const RoomUncheckedUpdateManyInputSchema: z.ZodType<Prisma.RoomUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
 export const TGATScoreCreateInputSchema: z.ZodType<Prisma.TGATScoreCreateInput> = z.object({
@@ -1219,6 +1603,62 @@ export const UniChoiceUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UniChoice
   order: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 }).strict();
 
+export const EmailVerificationCreateInputSchema: z.ZodType<Prisma.EmailVerificationCreateInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string(),
+  otp: z.string(),
+  expiresAt: z.coerce.date(),
+  createdAt: z.coerce.date().optional()
+}).strict();
+
+export const EmailVerificationUncheckedCreateInputSchema: z.ZodType<Prisma.EmailVerificationUncheckedCreateInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string(),
+  otp: z.string(),
+  expiresAt: z.coerce.date(),
+  createdAt: z.coerce.date().optional()
+}).strict();
+
+export const EmailVerificationUpdateInputSchema: z.ZodType<Prisma.EmailVerificationUpdateInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  otp: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  expiresAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const EmailVerificationUncheckedUpdateInputSchema: z.ZodType<Prisma.EmailVerificationUncheckedUpdateInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  otp: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  expiresAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const EmailVerificationCreateManyInputSchema: z.ZodType<Prisma.EmailVerificationCreateManyInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string(),
+  otp: z.string(),
+  expiresAt: z.coerce.date(),
+  createdAt: z.coerce.date().optional()
+}).strict();
+
+export const EmailVerificationUpdateManyMutationInputSchema: z.ZodType<Prisma.EmailVerificationUpdateManyMutationInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  otp: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  expiresAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const EmailVerificationUncheckedUpdateManyInputSchema: z.ZodType<Prisma.EmailVerificationUncheckedUpdateManyInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  otp: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  expiresAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
 export const StringFilterSchema: z.ZodType<Prisma.StringFilter> = z.object({
   equals: z.string().optional(),
   in: z.string().array().optional(),
@@ -1258,6 +1698,22 @@ export const DateTimeFilterSchema: z.ZodType<Prisma.DateTimeFilter> = z.object({
   gt: z.coerce.date().optional(),
   gte: z.coerce.date().optional(),
   not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeFilterSchema) ]).optional(),
+}).strict();
+
+export const IntNullableFilterSchema: z.ZodType<Prisma.IntNullableFilter> = z.object({
+  equals: z.number().optional().nullable(),
+  in: z.number().array().optional().nullable(),
+  notIn: z.number().array().optional().nullable(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+}).strict();
+
+export const RoomNullableScalarRelationFilterSchema: z.ZodType<Prisma.RoomNullableScalarRelationFilter> = z.object({
+  is: z.lazy(() => RoomWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => RoomWhereInputSchema).optional().nullable()
 }).strict();
 
 export const TGATScoreNullableScalarRelationFilterSchema: z.ZodType<Prisma.TGATScoreNullableScalarRelationFilter> = z.object({
@@ -1300,7 +1756,15 @@ export const UserCountOrderByAggregateInputSchema: z.ZodType<Prisma.UserCountOrd
   firstName: z.lazy(() => SortOrderSchema).optional(),
   lastName: z.lazy(() => SortOrderSchema).optional(),
   studentId: z.lazy(() => SortOrderSchema).optional(),
-  profileUrl: z.lazy(() => SortOrderSchema).optional()
+  profileUrl: z.lazy(() => SortOrderSchema).optional(),
+  schoolYear: z.lazy(() => SortOrderSchema).optional(),
+  seatNumber: z.lazy(() => SortOrderSchema).optional(),
+  roomId: z.lazy(() => SortOrderSchema).optional(),
+  homeroomId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const UserAvgOrderByAggregateInputSchema: z.ZodType<Prisma.UserAvgOrderByAggregateInput> = z.object({
+  seatNumber: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const UserMaxOrderByAggregateInputSchema: z.ZodType<Prisma.UserMaxOrderByAggregateInput> = z.object({
@@ -1313,7 +1777,11 @@ export const UserMaxOrderByAggregateInputSchema: z.ZodType<Prisma.UserMaxOrderBy
   firstName: z.lazy(() => SortOrderSchema).optional(),
   lastName: z.lazy(() => SortOrderSchema).optional(),
   studentId: z.lazy(() => SortOrderSchema).optional(),
-  profileUrl: z.lazy(() => SortOrderSchema).optional()
+  profileUrl: z.lazy(() => SortOrderSchema).optional(),
+  schoolYear: z.lazy(() => SortOrderSchema).optional(),
+  seatNumber: z.lazy(() => SortOrderSchema).optional(),
+  roomId: z.lazy(() => SortOrderSchema).optional(),
+  homeroomId: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const UserMinOrderByAggregateInputSchema: z.ZodType<Prisma.UserMinOrderByAggregateInput> = z.object({
@@ -1326,7 +1794,15 @@ export const UserMinOrderByAggregateInputSchema: z.ZodType<Prisma.UserMinOrderBy
   firstName: z.lazy(() => SortOrderSchema).optional(),
   lastName: z.lazy(() => SortOrderSchema).optional(),
   studentId: z.lazy(() => SortOrderSchema).optional(),
-  profileUrl: z.lazy(() => SortOrderSchema).optional()
+  profileUrl: z.lazy(() => SortOrderSchema).optional(),
+  schoolYear: z.lazy(() => SortOrderSchema).optional(),
+  seatNumber: z.lazy(() => SortOrderSchema).optional(),
+  roomId: z.lazy(() => SortOrderSchema).optional(),
+  homeroomId: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const UserSumOrderByAggregateInputSchema: z.ZodType<Prisma.UserSumOrderByAggregateInput> = z.object({
+  seatNumber: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
 export const StringWithAggregatesFilterSchema: z.ZodType<Prisma.StringWithAggregatesFilter> = z.object({
@@ -1379,7 +1855,7 @@ export const DateTimeWithAggregatesFilterSchema: z.ZodType<Prisma.DateTimeWithAg
   _max: z.lazy(() => NestedDateTimeFilterSchema).optional()
 }).strict();
 
-export const IntNullableFilterSchema: z.ZodType<Prisma.IntNullableFilter> = z.object({
+export const IntNullableWithAggregatesFilterSchema: z.ZodType<Prisma.IntNullableWithAggregatesFilter> = z.object({
   equals: z.number().optional().nullable(),
   in: z.number().array().optional().nullable(),
   notIn: z.number().array().optional().nullable(),
@@ -1387,7 +1863,90 @@ export const IntNullableFilterSchema: z.ZodType<Prisma.IntNullableFilter> = z.ob
   lte: z.number().optional(),
   gt: z.number().optional(),
   gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _avg: z.lazy(() => NestedFloatNullableFilterSchema).optional(),
+  _sum: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedIntNullableFilterSchema).optional()
+}).strict();
+
+export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.object({
+  equals: z.number().optional(),
+  in: z.number().array().optional(),
+  notIn: z.number().array().optional(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntFilterSchema) ]).optional(),
+}).strict();
+
+export const UserListRelationFilterSchema: z.ZodType<Prisma.UserListRelationFilter> = z.object({
+  every: z.lazy(() => UserWhereInputSchema).optional(),
+  some: z.lazy(() => UserWhereInputSchema).optional(),
+  none: z.lazy(() => UserWhereInputSchema).optional()
+}).strict();
+
+export const UserNullableScalarRelationFilterSchema: z.ZodType<Prisma.UserNullableScalarRelationFilter> = z.object({
+  is: z.lazy(() => UserWhereInputSchema).optional().nullable(),
+  isNot: z.lazy(() => UserWhereInputSchema).optional().nullable()
+}).strict();
+
+export const UserOrderByRelationAggregateInputSchema: z.ZodType<Prisma.UserOrderByRelationAggregateInput> = z.object({
+  _count: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomGradeRoomNoCompoundUniqueInputSchema: z.ZodType<Prisma.RoomGradeRoomNoCompoundUniqueInput> = z.object({
+  grade: z.number(),
+  roomNo: z.number()
+}).strict();
+
+export const RoomCountOrderByAggregateInputSchema: z.ZodType<Prisma.RoomCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  label: z.lazy(() => SortOrderSchema).optional(),
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomAvgOrderByAggregateInputSchema: z.ZodType<Prisma.RoomAvgOrderByAggregateInput> = z.object({
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomMaxOrderByAggregateInputSchema: z.ZodType<Prisma.RoomMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  label: z.lazy(() => SortOrderSchema).optional(),
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomMinOrderByAggregateInputSchema: z.ZodType<Prisma.RoomMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  label: z.lazy(() => SortOrderSchema).optional(),
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomSumOrderByAggregateInputSchema: z.ZodType<Prisma.RoomSumOrderByAggregateInput> = z.object({
+  grade: z.lazy(() => SortOrderSchema).optional(),
+  roomNo: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const IntWithAggregatesFilterSchema: z.ZodType<Prisma.IntWithAggregatesFilter> = z.object({
+  equals: z.number().optional(),
+  in: z.number().array().optional(),
+  notIn: z.number().array().optional(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntWithAggregatesFilterSchema) ]).optional(),
+  _count: z.lazy(() => NestedIntFilterSchema).optional(),
+  _avg: z.lazy(() => NestedFloatFilterSchema).optional(),
+  _sum: z.lazy(() => NestedIntFilterSchema).optional(),
+  _min: z.lazy(() => NestedIntFilterSchema).optional(),
+  _max: z.lazy(() => NestedIntFilterSchema).optional()
 }).strict();
 
 export const UserScalarRelationFilterSchema: z.ZodType<Prisma.UserScalarRelationFilter> = z.object({
@@ -1429,22 +1988,6 @@ export const TGATScoreSumOrderByAggregateInputSchema: z.ZodType<Prisma.TGATScore
   tgat1: z.lazy(() => SortOrderSchema).optional(),
   tgat2: z.lazy(() => SortOrderSchema).optional(),
   tgat3: z.lazy(() => SortOrderSchema).optional()
-}).strict();
-
-export const IntNullableWithAggregatesFilterSchema: z.ZodType<Prisma.IntNullableWithAggregatesFilter> = z.object({
-  equals: z.number().optional().nullable(),
-  in: z.number().array().optional().nullable(),
-  notIn: z.number().array().optional().nullable(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntNullableWithAggregatesFilterSchema) ]).optional().nullable(),
-  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _avg: z.lazy(() => NestedFloatNullableFilterSchema).optional(),
-  _sum: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _min: z.lazy(() => NestedIntNullableFilterSchema).optional(),
-  _max: z.lazy(() => NestedIntNullableFilterSchema).optional()
 }).strict();
 
 export const TPATScoreCountOrderByAggregateInputSchema: z.ZodType<Prisma.TPATScoreCountOrderByAggregateInput> = z.object({
@@ -1594,17 +2137,6 @@ export const ALevelScoreSumOrderByAggregateInputSchema: z.ZodType<Prisma.ALevelS
   alevel89: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
-export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.object({
-  equals: z.number().optional(),
-  in: z.number().array().optional(),
-  notIn: z.number().array().optional(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntFilterSchema) ]).optional(),
-}).strict();
-
 export const UniChoiceCountOrderByAggregateInputSchema: z.ZodType<Prisma.UniChoiceCountOrderByAggregateInput> = z.object({
   id: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -1634,20 +2166,40 @@ export const UniChoiceSumOrderByAggregateInputSchema: z.ZodType<Prisma.UniChoice
   order: z.lazy(() => SortOrderSchema).optional()
 }).strict();
 
-export const IntWithAggregatesFilterSchema: z.ZodType<Prisma.IntWithAggregatesFilter> = z.object({
-  equals: z.number().optional(),
-  in: z.number().array().optional(),
-  notIn: z.number().array().optional(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntWithAggregatesFilterSchema) ]).optional(),
-  _count: z.lazy(() => NestedIntFilterSchema).optional(),
-  _avg: z.lazy(() => NestedFloatFilterSchema).optional(),
-  _sum: z.lazy(() => NestedIntFilterSchema).optional(),
-  _min: z.lazy(() => NestedIntFilterSchema).optional(),
-  _max: z.lazy(() => NestedIntFilterSchema).optional()
+export const EmailVerificationCountOrderByAggregateInputSchema: z.ZodType<Prisma.EmailVerificationCountOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  email: z.lazy(() => SortOrderSchema).optional(),
+  otp: z.lazy(() => SortOrderSchema).optional(),
+  expiresAt: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const EmailVerificationMaxOrderByAggregateInputSchema: z.ZodType<Prisma.EmailVerificationMaxOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  email: z.lazy(() => SortOrderSchema).optional(),
+  otp: z.lazy(() => SortOrderSchema).optional(),
+  expiresAt: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const EmailVerificationMinOrderByAggregateInputSchema: z.ZodType<Prisma.EmailVerificationMinOrderByAggregateInput> = z.object({
+  id: z.lazy(() => SortOrderSchema).optional(),
+  email: z.lazy(() => SortOrderSchema).optional(),
+  otp: z.lazy(() => SortOrderSchema).optional(),
+  expiresAt: z.lazy(() => SortOrderSchema).optional(),
+  createdAt: z.lazy(() => SortOrderSchema).optional()
+}).strict();
+
+export const RoomCreateNestedOneWithoutUsersInputSchema: z.ZodType<Prisma.RoomCreateNestedOneWithoutUsersInput> = z.object({
+  create: z.union([ z.lazy(() => RoomCreateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedCreateWithoutUsersInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RoomCreateOrConnectWithoutUsersInputSchema).optional(),
+  connect: z.lazy(() => RoomWhereUniqueInputSchema).optional()
+}).strict();
+
+export const RoomCreateNestedOneWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomCreateNestedOneWithoutHomeroomTeacherInput> = z.object({
+  create: z.union([ z.lazy(() => RoomCreateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedCreateWithoutHomeroomTeacherInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RoomCreateOrConnectWithoutHomeroomTeacherInputSchema).optional(),
+  connect: z.lazy(() => RoomWhereUniqueInputSchema).optional()
 }).strict();
 
 export const TGATScoreCreateNestedOneWithoutUserInputSchema: z.ZodType<Prisma.TGATScoreCreateNestedOneWithoutUserInput> = z.object({
@@ -1710,6 +2262,34 @@ export const NullableStringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.Nu
 
 export const DateTimeFieldUpdateOperationsInputSchema: z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput> = z.object({
   set: z.coerce.date().optional()
+}).strict();
+
+export const NullableIntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableIntFieldUpdateOperationsInput> = z.object({
+  set: z.number().optional().nullable(),
+  increment: z.number().optional(),
+  decrement: z.number().optional(),
+  multiply: z.number().optional(),
+  divide: z.number().optional()
+}).strict();
+
+export const RoomUpdateOneWithoutUsersNestedInputSchema: z.ZodType<Prisma.RoomUpdateOneWithoutUsersNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RoomCreateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedCreateWithoutUsersInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RoomCreateOrConnectWithoutUsersInputSchema).optional(),
+  upsert: z.lazy(() => RoomUpsertWithoutUsersInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => RoomWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => RoomWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => RoomWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => RoomUpdateToOneWithWhereWithoutUsersInputSchema),z.lazy(() => RoomUpdateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutUsersInputSchema) ]).optional(),
+}).strict();
+
+export const RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema: z.ZodType<Prisma.RoomUpdateOneWithoutHomeroomTeacherNestedInput> = z.object({
+  create: z.union([ z.lazy(() => RoomCreateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedCreateWithoutHomeroomTeacherInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => RoomCreateOrConnectWithoutHomeroomTeacherInputSchema).optional(),
+  upsert: z.lazy(() => RoomUpsertWithoutHomeroomTeacherInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => RoomWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => RoomWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => RoomWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => RoomUpdateToOneWithWhereWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUpdateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutHomeroomTeacherInputSchema) ]).optional(),
 }).strict();
 
 export const TGATScoreUpdateOneWithoutUserNestedInputSchema: z.ZodType<Prisma.TGATScoreUpdateOneWithoutUserNestedInput> = z.object({
@@ -1800,18 +2380,92 @@ export const UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema: z.ZodType
   deleteMany: z.union([ z.lazy(() => UniChoiceScalarWhereInputSchema),z.lazy(() => UniChoiceScalarWhereInputSchema).array() ]).optional(),
 }).strict();
 
-export const UserCreateNestedOneWithoutTgatScoreInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutTgatScoreInput> = z.object({
-  create: z.union([ z.lazy(() => UserCreateWithoutTgatScoreInputSchema),z.lazy(() => UserUncheckedCreateWithoutTgatScoreInputSchema) ]).optional(),
-  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutTgatScoreInputSchema).optional(),
+export const UserCreateNestedManyWithoutRoomInputSchema: z.ZodType<Prisma.UserCreateNestedManyWithoutRoomInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserCreateWithoutRoomInputSchema).array(),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema),z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => UserCreateManyRoomInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const UserCreateNestedOneWithoutHomeroomInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutHomeroomInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutHomeroomInputSchema).optional(),
   connect: z.lazy(() => UserWhereUniqueInputSchema).optional()
 }).strict();
 
-export const NullableIntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableIntFieldUpdateOperationsInput> = z.object({
-  set: z.number().optional().nullable(),
+export const UserUncheckedCreateNestedManyWithoutRoomInputSchema: z.ZodType<Prisma.UserUncheckedCreateNestedManyWithoutRoomInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserCreateWithoutRoomInputSchema).array(),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema),z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => UserCreateManyRoomInputEnvelopeSchema).optional(),
+  connect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+}).strict();
+
+export const UserUncheckedCreateNestedOneWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUncheckedCreateNestedOneWithoutHomeroomInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutHomeroomInputSchema).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional()
+}).strict();
+
+export const IntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.IntFieldUpdateOperationsInput> = z.object({
+  set: z.number().optional(),
   increment: z.number().optional(),
   decrement: z.number().optional(),
   multiply: z.number().optional(),
   divide: z.number().optional()
+}).strict();
+
+export const UserUpdateManyWithoutRoomNestedInputSchema: z.ZodType<Prisma.UserUpdateManyWithoutRoomNestedInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserCreateWithoutRoomInputSchema).array(),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema),z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => UserUpsertWithWhereUniqueWithoutRoomInputSchema),z.lazy(() => UserUpsertWithWhereUniqueWithoutRoomInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => UserCreateManyRoomInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => UserUpdateWithWhereUniqueWithoutRoomInputSchema),z.lazy(() => UserUpdateWithWhereUniqueWithoutRoomInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => UserUpdateManyWithWhereWithoutRoomInputSchema),z.lazy(() => UserUpdateManyWithWhereWithoutRoomInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => UserScalarWhereInputSchema),z.lazy(() => UserScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const UserUpdateOneWithoutHomeroomNestedInputSchema: z.ZodType<Prisma.UserUpdateOneWithoutHomeroomNestedInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutHomeroomInputSchema).optional(),
+  upsert: z.lazy(() => UserUpsertWithoutHomeroomInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => UserWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => UserWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => UserUpdateToOneWithWhereWithoutHomeroomInputSchema),z.lazy(() => UserUpdateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutHomeroomInputSchema) ]).optional(),
+}).strict();
+
+export const UserUncheckedUpdateManyWithoutRoomNestedInputSchema: z.ZodType<Prisma.UserUncheckedUpdateManyWithoutRoomNestedInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserCreateWithoutRoomInputSchema).array(),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema).array() ]).optional(),
+  connectOrCreate: z.union([ z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema),z.lazy(() => UserCreateOrConnectWithoutRoomInputSchema).array() ]).optional(),
+  upsert: z.union([ z.lazy(() => UserUpsertWithWhereUniqueWithoutRoomInputSchema),z.lazy(() => UserUpsertWithWhereUniqueWithoutRoomInputSchema).array() ]).optional(),
+  createMany: z.lazy(() => UserCreateManyRoomInputEnvelopeSchema).optional(),
+  set: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  disconnect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  delete: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  connect: z.union([ z.lazy(() => UserWhereUniqueInputSchema),z.lazy(() => UserWhereUniqueInputSchema).array() ]).optional(),
+  update: z.union([ z.lazy(() => UserUpdateWithWhereUniqueWithoutRoomInputSchema),z.lazy(() => UserUpdateWithWhereUniqueWithoutRoomInputSchema).array() ]).optional(),
+  updateMany: z.union([ z.lazy(() => UserUpdateManyWithWhereWithoutRoomInputSchema),z.lazy(() => UserUpdateManyWithWhereWithoutRoomInputSchema).array() ]).optional(),
+  deleteMany: z.union([ z.lazy(() => UserScalarWhereInputSchema),z.lazy(() => UserScalarWhereInputSchema).array() ]).optional(),
+}).strict();
+
+export const UserUncheckedUpdateOneWithoutHomeroomNestedInputSchema: z.ZodType<Prisma.UserUncheckedUpdateOneWithoutHomeroomNestedInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutHomeroomInputSchema).optional(),
+  upsert: z.lazy(() => UserUpsertWithoutHomeroomInputSchema).optional(),
+  disconnect: z.union([ z.boolean(),z.lazy(() => UserWhereInputSchema) ]).optional(),
+  delete: z.union([ z.boolean(),z.lazy(() => UserWhereInputSchema) ]).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional(),
+  update: z.union([ z.lazy(() => UserUpdateToOneWithWhereWithoutHomeroomInputSchema),z.lazy(() => UserUpdateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutHomeroomInputSchema) ]).optional(),
+}).strict();
+
+export const UserCreateNestedOneWithoutTgatScoreInputSchema: z.ZodType<Prisma.UserCreateNestedOneWithoutTgatScoreInput> = z.object({
+  create: z.union([ z.lazy(() => UserCreateWithoutTgatScoreInputSchema),z.lazy(() => UserUncheckedCreateWithoutTgatScoreInputSchema) ]).optional(),
+  connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutTgatScoreInputSchema).optional(),
+  connect: z.lazy(() => UserWhereUniqueInputSchema).optional()
 }).strict();
 
 export const UserUpdateOneRequiredWithoutTgatScoreNestedInputSchema: z.ZodType<Prisma.UserUpdateOneRequiredWithoutTgatScoreNestedInput> = z.object({
@@ -1854,14 +2508,6 @@ export const UserCreateNestedOneWithoutUniChoicesInputSchema: z.ZodType<Prisma.U
   create: z.union([ z.lazy(() => UserCreateWithoutUniChoicesInputSchema),z.lazy(() => UserUncheckedCreateWithoutUniChoicesInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => UserCreateOrConnectWithoutUniChoicesInputSchema).optional(),
   connect: z.lazy(() => UserWhereUniqueInputSchema).optional()
-}).strict();
-
-export const IntFieldUpdateOperationsInputSchema: z.ZodType<Prisma.IntFieldUpdateOperationsInput> = z.object({
-  set: z.number().optional(),
-  increment: z.number().optional(),
-  decrement: z.number().optional(),
-  multiply: z.number().optional(),
-  divide: z.number().optional()
 }).strict();
 
 export const UserUpdateOneRequiredWithoutUniChoicesNestedInputSchema: z.ZodType<Prisma.UserUpdateOneRequiredWithoutUniChoicesNestedInput> = z.object({
@@ -1911,6 +2557,17 @@ export const NestedDateTimeFilterSchema: z.ZodType<Prisma.NestedDateTimeFilter> 
   not: z.union([ z.coerce.date(),z.lazy(() => NestedDateTimeFilterSchema) ]).optional(),
 }).strict();
 
+export const NestedIntNullableFilterSchema: z.ZodType<Prisma.NestedIntNullableFilter> = z.object({
+  equals: z.number().optional().nullable(),
+  in: z.number().array().optional().nullable(),
+  notIn: z.number().array().optional().nullable(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+}).strict();
+
 export const NestedStringWithAggregatesFilterSchema: z.ZodType<Prisma.NestedStringWithAggregatesFilter> = z.object({
   equals: z.string().optional(),
   in: z.string().array().optional(),
@@ -1954,17 +2611,6 @@ export const NestedStringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.Ne
   _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
   _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional()
-}).strict();
-
-export const NestedIntNullableFilterSchema: z.ZodType<Prisma.NestedIntNullableFilter> = z.object({
-  equals: z.number().optional().nullable(),
-  in: z.number().array().optional().nullable(),
-  notIn: z.number().array().optional().nullable(),
-  lt: z.number().optional(),
-  lte: z.number().optional(),
-  gt: z.number().optional(),
-  gte: z.number().optional(),
-  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
 }).strict();
 
 export const NestedDateTimeWithAggregatesFilterSchema: z.ZodType<Prisma.NestedDateTimeWithAggregatesFilter> = z.object({
@@ -2033,6 +2679,48 @@ export const NestedFloatFilterSchema: z.ZodType<Prisma.NestedFloatFilter> = z.ob
   gt: z.number().optional(),
   gte: z.number().optional(),
   not: z.union([ z.number(),z.lazy(() => NestedFloatFilterSchema) ]).optional(),
+}).strict();
+
+export const RoomCreateWithoutUsersInputSchema: z.ZodType<Prisma.RoomCreateWithoutUsersInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  homeroomTeacher: z.lazy(() => UserCreateNestedOneWithoutHomeroomInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedCreateWithoutUsersInputSchema: z.ZodType<Prisma.RoomUncheckedCreateWithoutUsersInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  homeroomTeacher: z.lazy(() => UserUncheckedCreateNestedOneWithoutHomeroomInputSchema).optional()
+}).strict();
+
+export const RoomCreateOrConnectWithoutUsersInputSchema: z.ZodType<Prisma.RoomCreateOrConnectWithoutUsersInput> = z.object({
+  where: z.lazy(() => RoomWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RoomCreateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedCreateWithoutUsersInputSchema) ]),
+}).strict();
+
+export const RoomCreateWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomCreateWithoutHomeroomTeacherInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  users: z.lazy(() => UserCreateNestedManyWithoutRoomInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedCreateWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomUncheckedCreateWithoutHomeroomTeacherInput> = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string(),
+  grade: z.number().int(),
+  roomNo: z.number().int(),
+  users: z.lazy(() => UserUncheckedCreateNestedManyWithoutRoomInputSchema).optional()
+}).strict();
+
+export const RoomCreateOrConnectWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomCreateOrConnectWithoutHomeroomTeacherInput> = z.object({
+  where: z.lazy(() => RoomWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => RoomCreateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedCreateWithoutHomeroomTeacherInputSchema) ]),
 }).strict();
 
 export const TGATScoreCreateWithoutUserInputSchema: z.ZodType<Prisma.TGATScoreCreateWithoutUserInput> = z.object({
@@ -2142,6 +2830,60 @@ export const UniChoiceCreateOrConnectWithoutUserInputSchema: z.ZodType<Prisma.Un
 export const UniChoiceCreateManyUserInputEnvelopeSchema: z.ZodType<Prisma.UniChoiceCreateManyUserInputEnvelope> = z.object({
   data: z.union([ z.lazy(() => UniChoiceCreateManyUserInputSchema),z.lazy(() => UniChoiceCreateManyUserInputSchema).array() ]),
   skipDuplicates: z.boolean().optional()
+}).strict();
+
+export const RoomUpsertWithoutUsersInputSchema: z.ZodType<Prisma.RoomUpsertWithoutUsersInput> = z.object({
+  update: z.union([ z.lazy(() => RoomUpdateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutUsersInputSchema) ]),
+  create: z.union([ z.lazy(() => RoomCreateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedCreateWithoutUsersInputSchema) ]),
+  where: z.lazy(() => RoomWhereInputSchema).optional()
+}).strict();
+
+export const RoomUpdateToOneWithWhereWithoutUsersInputSchema: z.ZodType<Prisma.RoomUpdateToOneWithWhereWithoutUsersInput> = z.object({
+  where: z.lazy(() => RoomWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => RoomUpdateWithoutUsersInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutUsersInputSchema) ]),
+}).strict();
+
+export const RoomUpdateWithoutUsersInputSchema: z.ZodType<Prisma.RoomUpdateWithoutUsersInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  homeroomTeacher: z.lazy(() => UserUpdateOneWithoutHomeroomNestedInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedUpdateWithoutUsersInputSchema: z.ZodType<Prisma.RoomUncheckedUpdateWithoutUsersInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  homeroomTeacher: z.lazy(() => UserUncheckedUpdateOneWithoutHomeroomNestedInputSchema).optional()
+}).strict();
+
+export const RoomUpsertWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomUpsertWithoutHomeroomTeacherInput> = z.object({
+  update: z.union([ z.lazy(() => RoomUpdateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutHomeroomTeacherInputSchema) ]),
+  create: z.union([ z.lazy(() => RoomCreateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedCreateWithoutHomeroomTeacherInputSchema) ]),
+  where: z.lazy(() => RoomWhereInputSchema).optional()
+}).strict();
+
+export const RoomUpdateToOneWithWhereWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomUpdateToOneWithWhereWithoutHomeroomTeacherInput> = z.object({
+  where: z.lazy(() => RoomWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => RoomUpdateWithoutHomeroomTeacherInputSchema),z.lazy(() => RoomUncheckedUpdateWithoutHomeroomTeacherInputSchema) ]),
+}).strict();
+
+export const RoomUpdateWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomUpdateWithoutHomeroomTeacherInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  users: z.lazy(() => UserUpdateManyWithoutRoomNestedInputSchema).optional()
+}).strict();
+
+export const RoomUncheckedUpdateWithoutHomeroomTeacherInputSchema: z.ZodType<Prisma.RoomUncheckedUpdateWithoutHomeroomTeacherInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  label: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  grade: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  roomNo: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  users: z.lazy(() => UserUncheckedUpdateManyWithoutRoomNestedInputSchema).optional()
 }).strict();
 
 export const TGATScoreUpsertWithoutUserInputSchema: z.ZodType<Prisma.TGATScoreUpsertWithoutUserInput> = z.object({
@@ -2275,6 +3017,188 @@ export const UniChoiceScalarWhereInputSchema: z.ZodType<Prisma.UniChoiceScalarWh
   order: z.union([ z.lazy(() => IntFilterSchema),z.number() ]).optional(),
 }).strict();
 
+export const UserCreateWithoutRoomInputSchema: z.ZodType<Prisma.UserCreateWithoutRoomInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional().nullable(),
+  password: z.string(),
+  updatedAt: z.coerce.date().optional(),
+  role: z.string(),
+  title: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
+  tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserUncheckedCreateWithoutRoomInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutRoomInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional().nullable(),
+  password: z.string(),
+  updatedAt: z.coerce.date().optional(),
+  role: z.string(),
+  title: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
+  tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserCreateOrConnectWithoutRoomInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutRoomInput> = z.object({
+  where: z.lazy(() => UserWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema) ]),
+}).strict();
+
+export const UserCreateManyRoomInputEnvelopeSchema: z.ZodType<Prisma.UserCreateManyRoomInputEnvelope> = z.object({
+  data: z.union([ z.lazy(() => UserCreateManyRoomInputSchema),z.lazy(() => UserCreateManyRoomInputSchema).array() ]),
+  skipDuplicates: z.boolean().optional()
+}).strict();
+
+export const UserCreateWithoutHomeroomInputSchema: z.ZodType<Prisma.UserCreateWithoutHomeroomInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional().nullable(),
+  password: z.string(),
+  updatedAt: z.coerce.date().optional(),
+  role: z.string(),
+  title: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserUncheckedCreateWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutHomeroomInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional().nullable(),
+  password: z.string(),
+  updatedAt: z.coerce.date().optional(),
+  role: z.string(),
+  title: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUncheckedCreateNestedManyWithoutUserInputSchema).optional()
+}).strict();
+
+export const UserCreateOrConnectWithoutHomeroomInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutHomeroomInput> = z.object({
+  where: z.lazy(() => UserWhereUniqueInputSchema),
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]),
+}).strict();
+
+export const UserUpsertWithWhereUniqueWithoutRoomInputSchema: z.ZodType<Prisma.UserUpsertWithWhereUniqueWithoutRoomInput> = z.object({
+  where: z.lazy(() => UserWhereUniqueInputSchema),
+  update: z.union([ z.lazy(() => UserUpdateWithoutRoomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutRoomInputSchema) ]),
+  create: z.union([ z.lazy(() => UserCreateWithoutRoomInputSchema),z.lazy(() => UserUncheckedCreateWithoutRoomInputSchema) ]),
+}).strict();
+
+export const UserUpdateWithWhereUniqueWithoutRoomInputSchema: z.ZodType<Prisma.UserUpdateWithWhereUniqueWithoutRoomInput> = z.object({
+  where: z.lazy(() => UserWhereUniqueInputSchema),
+  data: z.union([ z.lazy(() => UserUpdateWithoutRoomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutRoomInputSchema) ]),
+}).strict();
+
+export const UserUpdateManyWithWhereWithoutRoomInputSchema: z.ZodType<Prisma.UserUpdateManyWithWhereWithoutRoomInput> = z.object({
+  where: z.lazy(() => UserScalarWhereInputSchema),
+  data: z.union([ z.lazy(() => UserUpdateManyMutationInputSchema),z.lazy(() => UserUncheckedUpdateManyWithoutRoomInputSchema) ]),
+}).strict();
+
+export const UserScalarWhereInputSchema: z.ZodType<Prisma.UserScalarWhereInput> = z.object({
+  AND: z.union([ z.lazy(() => UserScalarWhereInputSchema),z.lazy(() => UserScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => UserScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => UserScalarWhereInputSchema),z.lazy(() => UserScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  email: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  password: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema),z.coerce.date() ]).optional(),
+  role: z.union([ z.lazy(() => StringFilterSchema),z.string() ]).optional(),
+  title: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  firstName: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  lastName: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  studentId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  profileUrl: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  schoolYear: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  seatNumber: z.union([ z.lazy(() => IntNullableFilterSchema),z.number() ]).optional().nullable(),
+  roomId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+  homeroomId: z.union([ z.lazy(() => StringNullableFilterSchema),z.string() ]).optional().nullable(),
+}).strict();
+
+export const UserUpsertWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUpsertWithoutHomeroomInput> = z.object({
+  update: z.union([ z.lazy(() => UserUpdateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutHomeroomInputSchema) ]),
+  create: z.union([ z.lazy(() => UserCreateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedCreateWithoutHomeroomInputSchema) ]),
+  where: z.lazy(() => UserWhereInputSchema).optional()
+}).strict();
+
+export const UserUpdateToOneWithWhereWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUpdateToOneWithWhereWithoutHomeroomInput> = z.object({
+  where: z.lazy(() => UserWhereInputSchema).optional(),
+  data: z.union([ z.lazy(() => UserUpdateWithoutHomeroomInputSchema),z.lazy(() => UserUncheckedUpdateWithoutHomeroomInputSchema) ]),
+}).strict();
+
+export const UserUpdateWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUpdateWithoutHomeroomInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  role: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  title: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  firstName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUpdateManyWithoutUserNestedInputSchema).optional()
+}).strict();
+
+export const UserUncheckedUpdateWithoutHomeroomInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutHomeroomInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  role: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  title: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  firstName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+}).strict();
+
 export const UserCreateWithoutTgatScoreInputSchema: z.ZodType<Prisma.UserCreateWithoutTgatScoreInput> = z.object({
   id: z.string().uuid().optional(),
   email: z.string().optional().nullable(),
@@ -2286,6 +3210,10 @@ export const UserCreateWithoutTgatScoreInputSchema: z.ZodType<Prisma.UserCreateW
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceCreateNestedManyWithoutUserInputSchema).optional()
@@ -2302,6 +3230,10 @@ export const UserUncheckedCreateWithoutTgatScoreInputSchema: z.ZodType<Prisma.Us
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
   tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedCreateNestedManyWithoutUserInputSchema).optional()
@@ -2334,6 +3266,10 @@ export const UserUpdateWithoutTgatScoreInputSchema: z.ZodType<Prisma.UserUpdateW
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2350,6 +3286,10 @@ export const UserUncheckedUpdateWithoutTgatScoreInputSchema: z.ZodType<Prisma.Us
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2366,6 +3306,10 @@ export const UserCreateWithoutTpatScoreInputSchema: z.ZodType<Prisma.UserCreateW
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceCreateNestedManyWithoutUserInputSchema).optional()
@@ -2382,6 +3326,10 @@ export const UserUncheckedCreateWithoutTpatScoreInputSchema: z.ZodType<Prisma.Us
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedCreateNestedManyWithoutUserInputSchema).optional()
@@ -2414,6 +3362,10 @@ export const UserUpdateWithoutTpatScoreInputSchema: z.ZodType<Prisma.UserUpdateW
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2430,6 +3382,10 @@ export const UserUncheckedUpdateWithoutTpatScoreInputSchema: z.ZodType<Prisma.Us
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2446,6 +3402,10 @@ export const UserCreateWithoutAlevelScoreInputSchema: z.ZodType<Prisma.UserCreat
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceCreateNestedManyWithoutUserInputSchema).optional()
@@ -2462,6 +3422,10 @@ export const UserUncheckedCreateWithoutAlevelScoreInputSchema: z.ZodType<Prisma.
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedCreateNestedManyWithoutUserInputSchema).optional()
@@ -2494,6 +3458,10 @@ export const UserUpdateWithoutAlevelScoreInputSchema: z.ZodType<Prisma.UserUpdat
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2510,6 +3478,10 @@ export const UserUncheckedUpdateWithoutAlevelScoreInputSchema: z.ZodType<Prisma.
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   uniChoices: z.lazy(() => UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
@@ -2526,6 +3498,10 @@ export const UserCreateWithoutUniChoicesInputSchema: z.ZodType<Prisma.UserCreate
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  room: z.lazy(() => RoomCreateNestedOneWithoutUsersInputSchema).optional(),
+  homeroom: z.lazy(() => RoomCreateNestedOneWithoutHomeroomTeacherInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreCreateNestedOneWithoutUserInputSchema).optional()
@@ -2542,6 +3518,10 @@ export const UserUncheckedCreateWithoutUniChoicesInputSchema: z.ZodType<Prisma.U
   lastName: z.string().optional().nullable(),
   studentId: z.string().optional().nullable(),
   profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  roomId: z.string().optional().nullable(),
+  homeroomId: z.string().optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedCreateNestedOneWithoutUserInputSchema).optional()
@@ -2574,6 +3554,10 @@ export const UserUpdateWithoutUniChoicesInputSchema: z.ZodType<Prisma.UserUpdate
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  room: z.lazy(() => RoomUpdateOneWithoutUsersNestedInputSchema).optional(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
   tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional()
@@ -2590,6 +3574,10 @@ export const UserUncheckedUpdateWithoutUniChoicesInputSchema: z.ZodType<Prisma.U
   lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  roomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
   alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional()
@@ -2617,6 +3605,78 @@ export const UniChoiceUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prism
   id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   programId: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   order: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+}).strict();
+
+export const UserCreateManyRoomInputSchema: z.ZodType<Prisma.UserCreateManyRoomInput> = z.object({
+  id: z.string().uuid().optional(),
+  email: z.string().optional().nullable(),
+  password: z.string(),
+  updatedAt: z.coerce.date().optional(),
+  role: z.string(),
+  title: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  studentId: z.string().optional().nullable(),
+  profileUrl: z.string().optional().nullable(),
+  schoolYear: z.string().optional().nullable(),
+  seatNumber: z.number().int().optional().nullable(),
+  homeroomId: z.string().optional().nullable()
+}).strict();
+
+export const UserUpdateWithoutRoomInputSchema: z.ZodType<Prisma.UserUpdateWithoutRoomInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  role: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  title: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  firstName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroom: z.lazy(() => RoomUpdateOneWithoutHomeroomTeacherNestedInputSchema).optional(),
+  tgatScore: z.lazy(() => TGATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUpdateOneWithoutUserNestedInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUpdateManyWithoutUserNestedInputSchema).optional()
+}).strict();
+
+export const UserUncheckedUpdateWithoutRoomInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutRoomInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  role: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  title: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  firstName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  tgatScore: z.lazy(() => TGATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  tpatScore: z.lazy(() => TPATScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  alevelScore: z.lazy(() => ALevelScoreUncheckedUpdateOneWithoutUserNestedInputSchema).optional(),
+  uniChoices: z.lazy(() => UniChoiceUncheckedUpdateManyWithoutUserNestedInputSchema).optional()
+}).strict();
+
+export const UserUncheckedUpdateManyWithoutRoomInputSchema: z.ZodType<Prisma.UserUncheckedUpdateManyWithoutRoomInput> = z.object({
+  id: z.union([ z.string().uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  email: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  password: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  role: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  title: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  firstName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  lastName: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  studentId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  profileUrl: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  schoolYear: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  seatNumber: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  homeroomId: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 }).strict();
 
 /////////////////////////////////////////
@@ -2683,6 +3743,68 @@ export const UserFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.UserFindUniqueOrT
   select: UserSelectSchema.optional(),
   include: UserIncludeSchema.optional(),
   where: UserWhereUniqueInputSchema,
+}).strict() ;
+
+export const RoomFindFirstArgsSchema: z.ZodType<Prisma.RoomFindFirstArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereInputSchema.optional(),
+  orderBy: z.union([ RoomOrderByWithRelationInputSchema.array(),RoomOrderByWithRelationInputSchema ]).optional(),
+  cursor: RoomWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RoomScalarFieldEnumSchema,RoomScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RoomFindFirstOrThrowArgsSchema: z.ZodType<Prisma.RoomFindFirstOrThrowArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereInputSchema.optional(),
+  orderBy: z.union([ RoomOrderByWithRelationInputSchema.array(),RoomOrderByWithRelationInputSchema ]).optional(),
+  cursor: RoomWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RoomScalarFieldEnumSchema,RoomScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RoomFindManyArgsSchema: z.ZodType<Prisma.RoomFindManyArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereInputSchema.optional(),
+  orderBy: z.union([ RoomOrderByWithRelationInputSchema.array(),RoomOrderByWithRelationInputSchema ]).optional(),
+  cursor: RoomWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ RoomScalarFieldEnumSchema,RoomScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const RoomAggregateArgsSchema: z.ZodType<Prisma.RoomAggregateArgs> = z.object({
+  where: RoomWhereInputSchema.optional(),
+  orderBy: z.union([ RoomOrderByWithRelationInputSchema.array(),RoomOrderByWithRelationInputSchema ]).optional(),
+  cursor: RoomWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RoomGroupByArgsSchema: z.ZodType<Prisma.RoomGroupByArgs> = z.object({
+  where: RoomWhereInputSchema.optional(),
+  orderBy: z.union([ RoomOrderByWithAggregationInputSchema.array(),RoomOrderByWithAggregationInputSchema ]).optional(),
+  by: RoomScalarFieldEnumSchema.array(),
+  having: RoomScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const RoomFindUniqueArgsSchema: z.ZodType<Prisma.RoomFindUniqueArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereUniqueInputSchema,
+}).strict() ;
+
+export const RoomFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.RoomFindUniqueOrThrowArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereUniqueInputSchema,
 }).strict() ;
 
 export const TGATScoreFindFirstArgsSchema: z.ZodType<Prisma.TGATScoreFindFirstArgs> = z.object({
@@ -2933,6 +4055,63 @@ export const UniChoiceFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.UniChoiceFin
   where: UniChoiceWhereUniqueInputSchema,
 }).strict() ;
 
+export const EmailVerificationFindFirstArgsSchema: z.ZodType<Prisma.EmailVerificationFindFirstArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereInputSchema.optional(),
+  orderBy: z.union([ EmailVerificationOrderByWithRelationInputSchema.array(),EmailVerificationOrderByWithRelationInputSchema ]).optional(),
+  cursor: EmailVerificationWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ EmailVerificationScalarFieldEnumSchema,EmailVerificationScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const EmailVerificationFindFirstOrThrowArgsSchema: z.ZodType<Prisma.EmailVerificationFindFirstOrThrowArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereInputSchema.optional(),
+  orderBy: z.union([ EmailVerificationOrderByWithRelationInputSchema.array(),EmailVerificationOrderByWithRelationInputSchema ]).optional(),
+  cursor: EmailVerificationWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ EmailVerificationScalarFieldEnumSchema,EmailVerificationScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const EmailVerificationFindManyArgsSchema: z.ZodType<Prisma.EmailVerificationFindManyArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereInputSchema.optional(),
+  orderBy: z.union([ EmailVerificationOrderByWithRelationInputSchema.array(),EmailVerificationOrderByWithRelationInputSchema ]).optional(),
+  cursor: EmailVerificationWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+  distinct: z.union([ EmailVerificationScalarFieldEnumSchema,EmailVerificationScalarFieldEnumSchema.array() ]).optional(),
+}).strict() ;
+
+export const EmailVerificationAggregateArgsSchema: z.ZodType<Prisma.EmailVerificationAggregateArgs> = z.object({
+  where: EmailVerificationWhereInputSchema.optional(),
+  orderBy: z.union([ EmailVerificationOrderByWithRelationInputSchema.array(),EmailVerificationOrderByWithRelationInputSchema ]).optional(),
+  cursor: EmailVerificationWhereUniqueInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const EmailVerificationGroupByArgsSchema: z.ZodType<Prisma.EmailVerificationGroupByArgs> = z.object({
+  where: EmailVerificationWhereInputSchema.optional(),
+  orderBy: z.union([ EmailVerificationOrderByWithAggregationInputSchema.array(),EmailVerificationOrderByWithAggregationInputSchema ]).optional(),
+  by: EmailVerificationScalarFieldEnumSchema.array(),
+  having: EmailVerificationScalarWhereWithAggregatesInputSchema.optional(),
+  take: z.number().optional(),
+  skip: z.number().optional(),
+}).strict() ;
+
+export const EmailVerificationFindUniqueArgsSchema: z.ZodType<Prisma.EmailVerificationFindUniqueArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereUniqueInputSchema,
+}).strict() ;
+
+export const EmailVerificationFindUniqueOrThrowArgsSchema: z.ZodType<Prisma.EmailVerificationFindUniqueOrThrowArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereUniqueInputSchema,
+}).strict() ;
+
 export const UserCreateArgsSchema: z.ZodType<Prisma.UserCreateArgs> = z.object({
   select: UserSelectSchema.optional(),
   include: UserIncludeSchema.optional(),
@@ -2984,6 +4163,60 @@ export const UserUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.UserUpdateManyA
 
 export const UserDeleteManyArgsSchema: z.ZodType<Prisma.UserDeleteManyArgs> = z.object({
   where: UserWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const RoomCreateArgsSchema: z.ZodType<Prisma.RoomCreateArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  data: z.union([ RoomCreateInputSchema,RoomUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const RoomUpsertArgsSchema: z.ZodType<Prisma.RoomUpsertArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereUniqueInputSchema,
+  create: z.union([ RoomCreateInputSchema,RoomUncheckedCreateInputSchema ]),
+  update: z.union([ RoomUpdateInputSchema,RoomUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const RoomCreateManyArgsSchema: z.ZodType<Prisma.RoomCreateManyArgs> = z.object({
+  data: z.union([ RoomCreateManyInputSchema,RoomCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const RoomCreateManyAndReturnArgsSchema: z.ZodType<Prisma.RoomCreateManyAndReturnArgs> = z.object({
+  data: z.union([ RoomCreateManyInputSchema,RoomCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const RoomDeleteArgsSchema: z.ZodType<Prisma.RoomDeleteArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  where: RoomWhereUniqueInputSchema,
+}).strict() ;
+
+export const RoomUpdateArgsSchema: z.ZodType<Prisma.RoomUpdateArgs> = z.object({
+  select: RoomSelectSchema.optional(),
+  include: RoomIncludeSchema.optional(),
+  data: z.union([ RoomUpdateInputSchema,RoomUncheckedUpdateInputSchema ]),
+  where: RoomWhereUniqueInputSchema,
+}).strict() ;
+
+export const RoomUpdateManyArgsSchema: z.ZodType<Prisma.RoomUpdateManyArgs> = z.object({
+  data: z.union([ RoomUpdateManyMutationInputSchema,RoomUncheckedUpdateManyInputSchema ]),
+  where: RoomWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const RoomUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.RoomUpdateManyAndReturnArgs> = z.object({
+  data: z.union([ RoomUpdateManyMutationInputSchema,RoomUncheckedUpdateManyInputSchema ]),
+  where: RoomWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const RoomDeleteManyArgsSchema: z.ZodType<Prisma.RoomDeleteManyArgs> = z.object({
+  where: RoomWhereInputSchema.optional(),
   limit: z.number().optional(),
 }).strict() ;
 
@@ -3200,5 +4433,55 @@ export const UniChoiceUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.UniChoiceU
 
 export const UniChoiceDeleteManyArgsSchema: z.ZodType<Prisma.UniChoiceDeleteManyArgs> = z.object({
   where: UniChoiceWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const EmailVerificationCreateArgsSchema: z.ZodType<Prisma.EmailVerificationCreateArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  data: z.union([ EmailVerificationCreateInputSchema,EmailVerificationUncheckedCreateInputSchema ]),
+}).strict() ;
+
+export const EmailVerificationUpsertArgsSchema: z.ZodType<Prisma.EmailVerificationUpsertArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereUniqueInputSchema,
+  create: z.union([ EmailVerificationCreateInputSchema,EmailVerificationUncheckedCreateInputSchema ]),
+  update: z.union([ EmailVerificationUpdateInputSchema,EmailVerificationUncheckedUpdateInputSchema ]),
+}).strict() ;
+
+export const EmailVerificationCreateManyArgsSchema: z.ZodType<Prisma.EmailVerificationCreateManyArgs> = z.object({
+  data: z.union([ EmailVerificationCreateManyInputSchema,EmailVerificationCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const EmailVerificationCreateManyAndReturnArgsSchema: z.ZodType<Prisma.EmailVerificationCreateManyAndReturnArgs> = z.object({
+  data: z.union([ EmailVerificationCreateManyInputSchema,EmailVerificationCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict() ;
+
+export const EmailVerificationDeleteArgsSchema: z.ZodType<Prisma.EmailVerificationDeleteArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  where: EmailVerificationWhereUniqueInputSchema,
+}).strict() ;
+
+export const EmailVerificationUpdateArgsSchema: z.ZodType<Prisma.EmailVerificationUpdateArgs> = z.object({
+  select: EmailVerificationSelectSchema.optional(),
+  data: z.union([ EmailVerificationUpdateInputSchema,EmailVerificationUncheckedUpdateInputSchema ]),
+  where: EmailVerificationWhereUniqueInputSchema,
+}).strict() ;
+
+export const EmailVerificationUpdateManyArgsSchema: z.ZodType<Prisma.EmailVerificationUpdateManyArgs> = z.object({
+  data: z.union([ EmailVerificationUpdateManyMutationInputSchema,EmailVerificationUncheckedUpdateManyInputSchema ]),
+  where: EmailVerificationWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const EmailVerificationUpdateManyAndReturnArgsSchema: z.ZodType<Prisma.EmailVerificationUpdateManyAndReturnArgs> = z.object({
+  data: z.union([ EmailVerificationUpdateManyMutationInputSchema,EmailVerificationUncheckedUpdateManyInputSchema ]),
+  where: EmailVerificationWhereInputSchema.optional(),
+  limit: z.number().optional(),
+}).strict() ;
+
+export const EmailVerificationDeleteManyArgsSchema: z.ZodType<Prisma.EmailVerificationDeleteManyArgs> = z.object({
+  where: EmailVerificationWhereInputSchema.optional(),
   limit: z.number().optional(),
 }).strict() ;

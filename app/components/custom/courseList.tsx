@@ -75,7 +75,7 @@ export default function CourseList({
   };
 
   return (
-    <div className="flex flex-col w-full p-4 h-full gap-4">
+    <div className="flex flex-col w-full h-full gap-4">
       <div className="text-xl font-bold text-text">รายชื่อคณะ</div>
       <Input
         data={query}
@@ -87,7 +87,7 @@ export default function CourseList({
         <div className="text-red-500">{String(error.message || error)}</div>
       )}
       {!isLoading && !error && (
-        <Card className="space-y-2 max-h-80 p-2 overflow-y-auto">
+        <Card className="space-y-2 max-h-[80vh] p-2 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="text-gray-500 p-2">ไม่เจอผลลัพธ์</div>
           ) : (

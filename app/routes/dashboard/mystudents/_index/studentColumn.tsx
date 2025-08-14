@@ -2,6 +2,7 @@ import { Column, ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { LucideChevronDown, LucideChevronUp } from "lucide-react";
 import { UserWithScore } from "@types";
+import { getFullName } from "@functions/misc";
 
 function HeaderButton({
   column,
@@ -42,13 +43,7 @@ function HeaderButton({
   );
 }
 
-export function buildStudentColumns(
-  data: UserWithScore[]
-): ColumnDef<UserWithScore>[] {
-  const uniqueALevelSubjects = Array.from(
-    new Set(data.flatMap((user) => user.alevel?.map((a) => a.subject) ?? []))
-  );
-
+export function buildStudentColumns(): ColumnDef<UserWithScore>[] {
   const userColumns: ColumnDef<UserWithScore>[] = [
     {
       accessorKey: "pic",
@@ -73,65 +68,10 @@ export function buildStudentColumns(
       accessorKey: "name",
       header: ({ column }) => <HeaderButton column={column} label="Name" />,
       cell: ({ row }) => (
-        <div className="w-full">
-          {row.original.user.firstName + " " + row.original.user.lastName || ""}
-        </div>
+        <div className="w-full">{getFullName(row.original.user)}</div>
       ),
     },
   ];
 
-  const tgatSubjects = ["tgat1", "tgat2", "tgat3"];
-
-  const tgatColumns: ColumnDef<UserWithScore>[] = tgatSubjects.map(
-    (subject) => ({
-      accessorKey: subject,
-      header: ({ column }) => (
-        <HeaderButton
-          column={column}
-          label={subject.toUpperCase().replace("TGAT", "TGAT ")}
-        />
-      ),
-      cell: ({ row }) => (
-        <div className="w-full">
-          {row.original.tgat?.[subject as keyof typeof row.original.tgat] ??
-            "-"}
-        </div>
-      ),
-    })
-  );
-
-  const tpatSubjects = ["tpat1", "tpat2", "tpat3", "tpat4", "tpat5"];
-
-  const tpatColumns: ColumnDef<UserWithScore>[] = tpatSubjects.map(
-    (subject) => ({
-      accessorKey: subject,
-      header: ({ column }) => (
-        <HeaderButton
-          column={column}
-          label={subject.toUpperCase().replace("TPAT", "TPAT ")}
-        />
-      ),
-      cell: ({ row }) => (
-        <div className="w-full">
-          {row.original.tpat?.[subject as keyof typeof row.original.tpat] ??
-            "-"}
-        </div>
-      ),
-    })
-  );
-
-  const alevelColumns: ColumnDef<UserWithScore>[] = uniqueALevelSubjects.map(
-    (subject) => ({
-      accessorKey: `alevel-${subject}`,
-      header: ({ column }) => <HeaderButton column={column} label={subject} />,
-      cell: ({ row }) => {
-        const scoreObj = row.original.alevel?.find(
-          (a) => a.subject === subject
-        );
-        return <div className="w-full">{scoreObj?.score ?? "-"}</div>;
-      },
-    })
-  );
-
-  return [...userColumns, ...tgatColumns, ...tpatColumns, ...alevelColumns];
+  return userColumns;
 }

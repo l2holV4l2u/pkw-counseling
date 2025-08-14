@@ -1,6 +1,5 @@
 import { ActionFunctionArgs } from "@remix-run/node";
-import { prisma } from "@functions/server/prisma";
-import { User } from "prisma/generated/zod";
+import { updateUser } from "@functions/server/user";
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
@@ -18,8 +17,4 @@ export async function action({ request }: ActionFunctionArgs) {
     console.error("Failed to update event:", err);
     return new Response("Failed to update event", { status: 500 });
   }
-}
-
-async function updateUser(user: User) {
-  await prisma.user.update({ where: { id: user.id }, data: user });
 }

@@ -35,9 +35,13 @@ export default function Analysis() {
   if (!user) return <></>;
 
   return (
-    <Layout className="items-center">
-      <div className="flex max-w-2xl w-full h-full">
-        <div className="flex flex-col gap-4 w-full p-4 h-full">
+    <Layout>
+      <div className="flex flex-col md:flex-row w-full h-full gap-4">
+        <div className="block md:hidden">
+          <CourseList selected={selected} setSelected={setSelected} />
+          <Separator className="my-4" />
+        </div>
+        <div className="flex flex-col gap-4 w-full h-full">
           <div className="text-xl font-bold text-text">วิเคราะห์คะแนน</div>
           {selected.length === 0 && (
             <div className="text-gray-500">ไม่มีคณะที่เลือก</div>
@@ -67,7 +71,7 @@ export default function Analysis() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <div className="text-sm w-36">คะแนนสูงต่ำ</div>
+                    <div>คะแนนสูงต่ำ</div>
                     {/* Score Bar */}
                     <div className="relative h-4 w-full bg-gray-200 rounded">
                       <div
@@ -98,7 +102,7 @@ export default function Analysis() {
                   {/* Score breakdown as stacked bar and table */}
                   {detail.scores && (
                     <div className="flex flex-col gap-2">
-                      <div className="text-sm w-36">การคำนวณคะแนน</div>
+                      <div>การคำนวณคะแนน</div>
                       {/* Stacked bar */}
                       <div className="t-scores flex h-4 w-full rounded overflow-hidden">
                         {Object.entries(detail.scores).map(([key, value]) => {
@@ -132,7 +136,7 @@ export default function Analysis() {
                       </div>
 
                       {/* Table of scores */}
-                      <div className="flex flex-col gap-2 text-xs w-full">
+                      <div className="flex flex-col gap-2 text-sm w-full">
                         {Object.entries(detail.scores).map(([key, value]) => {
                           // Human-readable label map
                           const labelMap: Record<string, string> = {
@@ -168,10 +172,10 @@ export default function Analysis() {
                         );
                         await updateUniChoice(user.id, newUniChoice);
                         setUniChoice(newUniChoice);
-                        toast.success(`ลบออกจาก "คณะที่อยากได้" แล้ว`);
+                        toast.success(`ลบออกจากคณะที่อยากได้แล้ว`);
                       }}
                     >
-                      ลบออกจาก "คณะที่อยากได้"
+                      ลบออกจากคณะที่อยากได้
                     </Button>
                   ) : (
                     <Button
@@ -186,10 +190,10 @@ export default function Analysis() {
                             prev.length + 1
                           ),
                         ]);
-                        toast.success(`เพิ่มเข้า "คณะที่อยากได้" เรียบร้อย`);
+                        toast.success(`เพิ่มเข้าคณะที่อยากได้เรียบร้อย`);
                       }}
                     >
-                      เพิ่มเข้า "คณะที่อยากได้"
+                      เพิ่มเข้าคณะที่อยากได้
                     </Button>
                   )}
                 </Card>
@@ -197,8 +201,13 @@ export default function Analysis() {
             })}
           </div>
         </div>
-        <Separator orientation="vertical" />
-        <CourseList selected={selected} setSelected={setSelected} />
+        <div className="hidden md:flex items-stretch">
+          <Separator orientation="vertical" />
+        </div>
+
+        <div className="hidden md:block w-full">
+          <CourseList selected={selected} setSelected={setSelected} />
+        </div>
       </div>
     </Layout>
   );

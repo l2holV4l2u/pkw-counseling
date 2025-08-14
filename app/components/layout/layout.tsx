@@ -17,10 +17,12 @@ export function Layout({
   label?: string[];
 }) {
   return (
-    <Card className="flex flex-col relative items-start gap-4 p-4 w-full h-full bg-white border-2 overflow-hidden">
+    <Card className="flex flex-col relative items-start gap-4 p-2 sm:p-4 w-full h-full bg-white border-2 overflow-hidden">
       {title && <h1 className="text-3xl font-bold text-text-800">{title}</h1>}
       {link && label && <Breadcrumb link={link} label={label} />}
-      <div className={cn("flex flex-col w-full h-full", className)}>
+      <div
+        className={cn("flex flex-col w-full h-full items-center", className)}
+      >
         {children}
       </div>
     </Card>

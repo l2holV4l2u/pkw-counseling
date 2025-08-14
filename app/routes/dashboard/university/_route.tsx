@@ -160,9 +160,9 @@ export default function University() {
   }
 
   return (
-    <Layout className="items-center">
-      <div className="flex max-w-2xl w-full h-full">
-        <div className="flex flex-col gap-4 w-full p-4 h-full">
+    <Layout>
+      <div className="flex w-full h-full gap-4">
+        <div className="flex flex-col gap-4 w-full h-full">
           <div className="flex justify-between">
             <div className="text-xl font-bold">คณะที่เลือก</div>
             <Button

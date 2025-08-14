@@ -13,23 +13,47 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  email           String?           @unique
+  id              String    @id @default(uuid())
+  email           String?   @unique
   password        String
-  updatedAt       DateTime         @default(now()) @updatedAt
-  role            String
+  updatedAt       DateTime  @default(now()) @updatedAt
+  role            String    // "student" | "teacher" | "admin" | etc.
   title           String?
   firstName       String?
   lastName        String?
-  schoolYear      String?
-  room            String?
-  studentId       String?          @unique
-  profileUrl      String?  
+  studentId       String?   @unique
+  profileUrl      String?
 
+  // Student fields
+  schoolYear      String?
+  seatNumber      Int?
+  roomId          String?
+  room            Room?     @relation(fields: [roomId], references: [id])
+
+  // Teacher fields
+  homeroom        Room?     @relation("HomeroomTeacher", fields: [homeroomId], references: [id])
+  homeroomId      String?   @unique
+
+  // Relations
   tgatScore       TGATScore?
   tpatScore       TPATScore?
   alevelScore     ALevelScore?
   uniChoices      UniChoice[]
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  label     String
+  grade     Int
+  roomNo    Int
+
+  // Students in this room
+  users     User[]   // students
+
+  // Homeroom teacher
+  homeroomTeacher User? @relation("HomeroomTeacher")
+
+  @@unique([grade, roomNo])
 }
 
 model TGATScore {
@@ -85,4 +109,12 @@ model UniChoice{
   programId String
   order     Int
   user      User   @relation(fields: [userId], references: [id])
+}
+
+model EmailVerification {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  otp        String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 }

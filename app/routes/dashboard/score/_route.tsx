@@ -32,9 +32,14 @@ function ScoreInput({
   setData: (val: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 items-center">
-      <div className="text-lg font-medium">{label}</div>
-      <Input data={data} setData={setData} type="number" />
+    <div className="flex w-full justify-between items-center">
+      <div className="font-medium">{label}</div>
+      <Input
+        data={data}
+        setData={setData}
+        type="number"
+        className="text-center w-16"
+      />
     </div>
   );
 }
@@ -74,7 +79,7 @@ export default function Score() {
   }, [tgat, tpat, alevel]);
 
   return (
-    <Layout className="items-center p-4">
+    <Layout>
       <div className="max-w-xl w-full flex flex-col gap-4">
         <div className="flex justify-between">
           <h1 className="text-xl font-semibold">คะแนน</h1>

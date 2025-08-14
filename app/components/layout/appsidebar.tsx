@@ -38,22 +38,22 @@ const iconProps = { size: 24, strokeWidth: 1.5 };
 
 const items = [
   {
-    title: "Score",
+    title: "คะแนนของฉัน",
     url: "score",
     icon: <PencilRuler {...iconProps} />,
   },
   {
-    title: "Analysis",
+    title: "การวิเคราะห์",
     url: "analysis",
     icon: <ChartBar {...iconProps} />,
   },
   {
-    title: "University",
+    title: "คณะที่สนใจ",
     url: "university",
     icon: <School {...iconProps} />,
   },
   {
-    title: "My Students",
+    title: "นักเรียนของฉัน",
     url: "mystudents",
     icon: <UsersRound {...iconProps} />,
   },

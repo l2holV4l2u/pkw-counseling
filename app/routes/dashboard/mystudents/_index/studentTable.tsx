@@ -43,7 +43,7 @@ export function StudentTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const data = useAtomValue(studentsAtom);
-  const columns = useMemo(() => buildStudentColumns(data), [data]);
+  const columns = useMemo(() => buildStudentColumns(), []);
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
